@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bet Ledger Pro</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bet Ledger Pro">
+<!--
+  HOW TO ADD BETS (for assistants): edit the JSON array in <script id="seed">.
+  Fields: id (unique string), date (YYYY-MM-DD), pick, game, odds (American, int), stake (number),
+  picker ("Claude"|"Grok"|...), confidence ("Lean"|"Standard"|"Strong"...), sport, type, book,
+  result ("pending"|"won"|"lost"|"push"|"void"), notes, clv (optional: true/false = beat closing line).
+  Bets appear in the log in seed-array order within a day (put newer bets first).
+  UNIT_SIZE below = $ per unit. Browser edits are stored in localStorage key "betLedger.overlay.v1"
+  as {id: bet|null}, layered over the seed; seed bets without an override always show the seed version.
+-->
+<style>
+:root{--bg:#0f1115;--card:#171a21;--card2:#1d212a;--line:#2a2f3a;--tx:#e7e9ee;--mut:#8b93a3;--grn:#3ecf8e;--red:#f26d6d;--yel:#e5c07b;--acc:#7aa2f7}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:20px 14px 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.top{display:grid;grid-template-columns:1.3fr 2fr;gap:14px}
+.big{font-size:40px;font-weight:700;letter-spacing:-1px}.mut{color:var(--mut);font-size:13px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat .v{font-size:22px;font-weight:650}
+.pos{color:var(--grn)}.neg{color:var(--red)}
+.bd{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+h3{margin:0 0 8px;font-size:14px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:5px 4px;text-align:right;white-space:nowrap}td:first-child,th:first-child{text-align:left}th{color:var(--mut);font-weight:500;font-size:12px}
+.logh{display:flex;justify-content:space-between;align-items:center;margin:26px 0 10px;flex-wrap:wrap;gap:8px}.logh h2{margin:0;font-size:20px}
+button,.btn{background:var(--card2);color:var(--tx);border:1px solid var(--line);border-radius:9px;padding:7px 12px;font:inherit;font-size:14px;cursor:pointer}
+button:hover{border-color:var(--acc)}button.pri{background:var(--acc);color:#0f1115;border-color:var(--acc);font-weight:600}
+.filters{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}.seg{display:flex;flex-wrap:wrap;gap:6px}.seg button.on{background:var(--acc);color:#0f1115;border-color:var(--acc)}
+.day{display:flex;justify-content:space-between;margin:20px 2px 8px;font-weight:650}
+.bet{margin-bottom:10px}.bh{display:flex;justify-content:space-between;gap:10px}.pk{font-weight:650;font-size:16px}
+.rt{text-align:right;white-space:nowrap}.odds{font-weight:650}.res{font-weight:700;margin-top:2px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.tag{background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:2px 9px;font-size:12px;color:var(--mut)}
+.notes{color:#c3c8d2;font-size:13.5px;margin:6px 0 10px}
+.acts{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}.acts div{display:flex;gap:6px;flex-wrap:wrap}.acts button{padding:5px 10px;font-size:13px}
+.acts button.sel{background:var(--acc);color:#0f1115}
+.st{font-size:11px;padding:1px 7px;border-radius:10px;margin-left:6px;vertical-align:middle;background:#3a3420;color:var(--yel)}
+dialog{background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:14px;max-width:560px;width:94vw}
+dialog::backdrop{background:#000a}form .g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{font-size:12px;color:var(--mut);display:flex;flex-direction:column;gap:3px}label.f{grid-column:1/-1}
+input,select,textarea{background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:7px;font:inherit}
+@media(max-width:720px){.top,.bd{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.big{font-size:34px}}
+</style></head><body><div class="wrap">
+<div class="top"><div class="card"><div class="mut">Net profit</div><div class="big" id="net"></div><div class="mut" id="sub"></div></div>
+<div class="card stats"><div class="stat"><div class="v" id="rec"></div><div class="mut">Record (W-L-P)</div></div><div class="stat"><div class="v" id="wr"></div><div class="mut">Win rate</div></div><div class="stat"><div class="v" id="roi"></div><div class="mut">ROI</div></div><div class="stat"><div class="v" id="clv"></div><div class="mut">Beat closing line</div></div></div></div>
+<div class="bd"><div class="card"><h3>By sport</h3><table id="bySport"></table></div><div class="card"><h3>By who picked it</h3><table id="byPicker"></table></div><div class="card"><h3>By confidence</h3><table id="byConf"></table></div></div>
+<div class="logh"><h2>Bet log</h2><div class="seg"><button id="imp">Import CSV</button><button id="exp">Export CSV</button><button class="pri" id="add">Add bet</button></div></div>
+<div class="filters"><div class="seg" id="fStatus"></div><div class="seg" id="fSport"></div><div class="seg" id="fPicker"></div></div>
+<div id="log"></div><input type="file" id="file" accept=".csv,text/csv" hidden>
+<p class="mut" style="margin-top:30px">Changes are saved in this browser. <button id="reset" style="font-size:12px;padding:3px 8px">Reset to seed</button></p></div>
+<dialog id="dlg"><form method="dialog" id="frm"><h3 id="dt">Add bet</h3><div class="g">
+<label class="f">Pick<input name="pick" required></label><label class="f">Game + time<input name="game"></label>
+<label>Date<input name="date" type="date" required></label><label>Odds (American)<input name="odds" type="number" required></label>
+<label>Stake ($)<input name="stake" type="number" step="0.01" min="0" required></label><label>Picked by<input name="picker" list="pl" value="Claude"></label>
+<label>Confidence<input name="confidence" list="cl" value="Standard"></label><label>Sport<input name="sport" list="sl"></label>
+<label>Bet type<input name="type" list="tl"></label><label>Sportsbook<input name="book"></label>
+<label>Result<select name="result"><option value="pending">Pending</option><option value="won">Won</option><option value="lost">Lost</option><option value="push">Push</option><option value="void">Void</option></select></label>
+<label>Beat closing line<select name="clv"><option value="">—</option><option value="true">Yes</option><option value="false">No</option></select></label>
+<label class="f">Notes<textarea name="notes" rows="3"></textarea></label></div>
+<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button value="cancel" formnovalidate>Cancel</button><button class="pri" value="ok" id="save">Save</button></div></form></dialog>
+<datalist id="pl"><option>Claude<option>Grok</datalist><datalist id="cl"><option>Lean<option>Standard<option>Strong</datalist>
+<datalist id="sl"><option>NFL<option>NCAAF<option>MLB<option>NBA<option>NHL<option>Soccer<option>Other</datalist>
+<datalist id="tl"><option>Spread<option>Total<option>Moneyline<option>Parlay<option>Teaser<option>Prop<option>Other</datalist>
+<script id="seed" type="application/json">
+[
+{"id":"s01","date":"2026-10-13","pick":"Parlay: Arsenal -1.5 / Inter ML / Leipzig ML / Bayern TT o3.5","game":"Champions League 4-leg parlay (3:00 PM ET)","odds":664,"stake":20,"picker":"Claude","confidence":"Standard","sport":"Soccer","type":"Other","book":"Caesars","result":"lost","notes":"50% profit boost ($20 max). Base +443, boosted to +664 effective. Pays $152.76 total. Legs: Arsenal -1.5 (-180) vs Lille; Inter ML (-450) vs Club Brugge; RB Leipzig ML (-190) vs PSV; Bayern team total Over 3.5 (-115) at Viking. Caesars ticket ff517420, placed 1:46 PM. FINAL: Arsenal 3-0 Lille (won); Inter 3-4 Club Brugge (lost); Leipzig 1-0 PSV (won); Viking 3-3 Bayern (TT o3.5 lost)."},
+{"id":"s02","date":"2026-10-13","pick":"Atletico Madrid ML (90 minutes)","game":"Atletico Madrid vs Manchester United (Champions League)","odds":-115,"stake":80,"picker":"Grok","confidence":"Standard","sport":"Soccer","type":"Moneyline","book":"Caesars","result":"won","notes":"Grok pick. Pays $149.57 total. Caesars ticket cd0cb800, placed 1:30 PM. FINAL: Atletico Madrid 2, Manchester United 0."},
+{"id":"s03","date":"2026-10-12","pick":"SGP: Rams ML + Josh Allen anytime TD + Puka Nacua 90+ rec yds","game":"Bills at Rams (MNF 8:15 PM ET)","odds":532,"stake":50,"picker":"Claude","confidence":"Lean","sport":"NFL","type":"Other","book":"Caesars","result":"lost","notes":"3-leg SGP +400 with 33% MNF profit boost. Odds logged as effective boosted price: $50 pays $316 total ($266 profit). FINAL: Bills 37, Rams 34 (Rams ML leg lost)."},
+{"id":"s04","date":"2026-10-12","pick":"Parlay: Dodgers ML + Rays -1.5","game":"NLCS G2 Dodgers @ Brewers + ALCS G1 Guardians @ Rays","odds":392,"stake":25,"picker":"Claude","confidence":"Lean","sport":"MLB","type":"Other","book":"Caesars","result":"lost","notes":"2-leg parlay +301 with 30% MLB parlay profit boost (1 of 2). Odds logged as effective boosted price: $25 pays $122.88 total ($97.88 profit). Second MLB boost still unused, valid through Oct 14. FINAL: NLCS G2 Brewers 7, Dodgers 4; ALCS G1 Guardians 7, Rays 3 (both legs lost)."},
+{"id":"s05","date":"2026-10-11","pick":"Cardinals +11.5","game":"Lions at Cardinals (4:25 PM ET) LIVE","odds":-110,"stake":55,"picker":"Claude","confidence":"Lean","sport":"NFL","type":"Spread","book":"Crazy Wager","result":"lost","notes":"Live bet placed with ARI down 21-7 late 2nd quarter. Pregame read was ARI +5.5 (sharp reverse line movement); Paul passed when it dropped to +4.5 and planned to buy back live. Claude's live target was +8.5 or better, but suggested skipping if ARI fell behind by 14+ early. Risking 55 to win 50."},
+{"id":"s06","date":"2026-10-11","pick":"Under 47","game":"49ers at Seahawks (4:25 PM ET)","odds":-110,"stake":110,"picker":"Claude","confidence":"Standard","sport":"NFL","type":"Total","book":"Crazy Wager","result":"lost","notes":"Claude play: total fell from 47.5 to 46.5/45.5 at most books despite ~75% of tickets on the over (sharp under). Crazy Wager still had 47, a point-plus better than market. Risking 110 to win 100."},
+{"id":"s07","date":"2026-10-11","pick":"Seahawks -3","game":"49ers at Seahawks (4:25 PM ET)","odds":100,"stake":100,"picker":"Claude","confidence":"Standard","sport":"NFL","type":"Spread","book":"Crazy Wager","result":"lost","notes":"Claude play: 81% of tickets on SF but juice moved to SEA -3 (-118 elsewhere); SF without Bosa, J. Thompson, Sigle; Evans limited (ribs). Limit was -120; got -3 at +100 at Crazy Wager. Push on a 3-point SEA win. Correlated with the Under 47 bet. Risking 100 to win 100."},
+{"id":"s08","date":"2026-10-11","pick":"Tyler Reddick to win","game":"NASCAR Cup: Bank of America 400, Charlotte oval (3 PM ET)","odds":1250,"stake":20,"picker":"Claude","confidence":"Lean","sport":"Other","type":"Other","book":"Caesars","result":"lost","notes":"Live race-winner bet placed 4:00 PM ET (race went green 3:19 PM). Base +1000 with 25% profit boost; odds field is the effective boosted price. Risking 20 to win 250 (pays 270). Claude target was +700 or better pre-race. Reddick started 3rd with the best driver rating at Charlotte; practice and qualifying were rained out, lineup set by metric."},
+{"id":"s09","date":"2026-10-11","pick":"Under 43.5","game":"Colts at Steelers (1:00 PM ET)","odds":-110,"stake":110,"picker":"Claude","confidence":"Standard","sport":"NFL","type":"Total","book":"Crazy Wager","result":"lost","notes":"Claude Standard play. Total opened 46.5, re-opened 44, down to 43.5 on 50% rain chance and 13-15 mph swirling wind; sharps under 44. Could drop to 42-42.5 if rain becomes certain. Risking 110 to win 100."},
+{"id":"s10","date":"2026-10-11","pick":"Colts +3","game":"Colts at Steelers (1:00 PM ET)","odds":-120,"stake":120,"picker":"Claude","confidence":"Standard","sport":"NFL","type":"Spread","book":"Crazy Wager","result":"lost","notes":"Claude conditional Standard play: sharps avoided PIT -2.5 below the key number; IND +3 flagged as very sharp. Rain and 13-15 mph wind in Pittsburgh as equalizer. Paid -120 to get onto the 3. Risking 120 to win 100."},
+{"id":"s11","date":"2026-10-11","pick":"Jaguars -1.5 / Colts +9 / Texans -1","game":"3-team 6-pt NFL teaser: Eagles/Jaguars, Colts/Steelers, Texans/Titans","odds":180,"stake":100,"picker":"Claude","confidence":"Standard","sport":"NFL","type":"Teaser","book":"Wagner","result":"lost","notes":"Legs: Jaguars -1.5 (from -7.5, London 9:30 AM); Colts +9 (from +3); Texans -1 (from -7). +180 flat teaser price. Confirmation #178156254. Risking 100 to win 180. Texans leg can push on a 1-point win; check book's push rule."},
+{"id":"s12","date":"2026-10-11","pick":"Under 43.5","game":"Ravens at Falcons (SNF, 8:20 PM ET)","odds":-110,"stake":110,"picker":"Claude","confidence":"Lean","sport":"NFL","type":"Total","book":"Crazy Wager","result":"lost","notes":"Claude Lean (suggested win $50); Paul played full unit. Lamar Jackson out, Tyler Huntley starts; Zay Flowers questionable; ATL defense strong vs dropbacks and run. Risking 110 to win 100."},
+{"id":"s13","date":"2026-10-11","pick":"Under 41.5","game":"Eagles vs Jaguars (London, 9:30 AM ET)","odds":-110,"stake":110,"picker":"Claude","confidence":"Lean","sport":"NFL","type":"Total","book":"Crazy Wager","result":"won","notes":"Claude Lean (suggested win $50); Paul played full unit. Total opened 44.5, down to 41.5 on PHI injuries; sharps under 42+. Risking 110 to win 100."},
+{"id":"s14","date":"2026-10-11","pick":"Under 41.5 / Under 43.5 / Under 41.5","game":"3-leg NFL parlay: Eagles/Jaguars, Colts/Steelers, Vikings/Saints","odds":926,"stake":50,"picker":"Claude","confidence":"Lean","sport":"NFL","type":"Parlay","book":"Caesars","result":"lost","notes":"Legs: Eagles at Jaguars Under 41.5 (-108); Colts at Steelers Under 43.5 (-107); Vikings at Saints Under 41.5 (-108). Base +618 with 50% profit boost; odds field is the effective boosted price. Risking 50 to win 463.18 (pays 513.18). Placed 7:54 AM ET."},
+{"id":"s15","date":"2026-10-10","pick":"Kentucky +9.5","game":"LSU at Kentucky (7 PM ET)","odds":-110,"stake":55,"picker":"Claude","confidence":"Standard","sport":"NCAAF","type":"Spread","book":"Crazy Wager","result":"won","notes":"Second bet on Kentucky +9.5 (add-on to earlier 55/50 position) as line held. Risking 55 to win 50. FINAL: Kentucky 35, LSU 34 (won outright)."},
+{"id":"s16","date":"2026-10-10","pick":"Kentucky +9.5","game":"LSU at Kentucky (7 PM ET)","odds":-110,"stake":55,"picker":"Claude","confidence":"Standard","sport":"NCAAF","type":"Spread","book":"Crazy Wager","result":"won","notes":"Sharps on Kentucky +9 or more (opened LSU -10.5, floor -8.5). Rain/wind in Lexington from Isaias remnants as equalizer. Risking 55 to win 50. Paul may add more ~30 min before kickoff if +9.5 or better holds. FINAL: Kentucky 35, LSU 34 (won outright)."},
+{"id":"s17","date":"2026-10-10","pick":"Under 41","game":"Texas vs Oklahoma (3:30 PM ET)","odds":-110,"stake":55,"picker":"Claude","confidence":"Lean","sport":"NCAAF","type":"Total","book":"Crazy Wager","result":"lost","notes":"Total opened 41.5, sharp under money took it to 39-39.5, public over money (~70% DK handle) pushed it back to 40.5-41.5 Saturday. Caesars had 41.5. Models ~41-42. Claude suggested Under 41.5 at -115 or better at standard size. Risking 55 to win 50."},
+{"id":"s18","date":"2026-10-10","pick":"UCLA +10.5","game":"UCLA at Oregon (3:30 PM ET)","odds":-113,"stake":113,"picker":"Grok","confidence":"Lean","sport":"NCAAF","type":"Spread","book":"Caesars","result":"won","notes":"Grok pick; Paul bet it through Caesars. Not a Claude recommendation (Claude passed). Consensus was Oregon -11.5, so +10.5 is a point worse than market; line already dropped from -13 on the Dante Moore concussion report (unconfirmed). Risking 113 to win 100. FINAL: UCLA 17, Oregon 15 (won outright)."},
+{"id":"s19","date":"2026-10-10","pick":"Nebraska +8.5","game":"Indiana at Nebraska (12:00 PM ET)","odds":-110,"stake":55,"picker":"Claude","confidence":"Lean","sport":"NCAAF","type":"Spread","book":"Crazy Wager","result":"won","notes":"Claude Lean at +8 or better. Line opened IND -9.5, moved to -7.5 at consensus; +8.5 clears 7 and 8. Risking 55 to win 50. FINAL: Indiana 20, Nebraska 17 (covered by 5.5)."},
+{"id":"s20","date":"2026-10-10","pick":"Nebraska +7.5","game":"Indiana at Nebraska","odds":-110,"stake":110,"picker":"Claude","confidence":"Standard","sport":"NCAAF","type":"Spread","book":"Crazy Wager","result":"won","notes":"[Reconstructed: card is cut off at the bottom of PDF page 6. Odds/stake/game visible; result Won, confidence Standard and Oct 10 date inferred from the Oct 10 daily net (+$295) and Standard net (-$290.43); sportsbook assumed.] FINAL: Indiana 20, Nebraska 17."},
+{"id":"s21","date":"2026-10-10","pick":"NCAAF bet (missing from PDF, won)","game":"Unknown (not in PDF export)","odds":-110,"stake":55,"picker":"Claude","confidence":"Lean","sport":"NCAAF","type":"Other","book":"","result":"won","notes":"[Placeholder: the PDF export stops after 20 visible bets but its stats say 22. The 2 missing bets are both Claude/Lean/NCAAF, 1 won + 1 lost, net $0, $105 wagered combined. Stake/odds/date assumed (55 at -110). Edit with real details.]"},
+{"id":"s22","date":"2026-10-10","pick":"NCAAF bet (missing from PDF, lost)","game":"Unknown (not in PDF export)","odds":-110,"stake":50,"picker":"Claude","confidence":"Lean","sport":"NCAAF","type":"Other","book":"","result":"lost","notes":"[Placeholder: see the matching won placeholder. Stake $50 assumed so the totals match the PDF ($1,608 wagered, net $0 for the pair). Edit with real details.]"}
+]
+</script>
+<script>
+const UNIT_SIZE=100, KEY='betLedger.overlay.v1';
+const SEED=JSON.parse(document.getElementById('seed').textContent);
+let overlay=JSON.parse(localStorage.getItem(KEY)||'{}');
+const F={status:'All',sport:'All',picker:'Anyone'};
+const save=()=>localStorage.setItem(KEY,JSON.stringify(overlay));
+function bets(){const ids=new Set(SEED.map(b=>b.id));const out=SEED.map(b=>b.id in overlay?overlay[b.id]:b).filter(Boolean);
+ for(const id in overlay)if(!ids.has(id)&&overlay[id])out.push(overlay[id]);return out}
+function win(b){const o=+b.odds,s=+b.stake;return o>0?s*o/100:s*100/Math.abs(o)}
+function profit(b){return b.result==='won'?win(b):b.result==='lost'?-b.stake:0}
+const r2=x=>Math.round(x*100)/100;
+const money=(x,sign=true)=>{x=r2(x);const a=Math.abs(x).toLocaleString('en-US',{maximumFractionDigits:2});return (x<0?'−':(sign&&x>0?'+':''))+'$'+a};
+const cls=x=>r2(x)>0?'pos':r2(x)<0?'neg':'';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const settled=b=>['won','lost','push'].includes(b.result);
+function agg(list){const s=list.filter(settled);const w=s.filter(b=>b.result==='won').length,l=s.filter(b=>b.result==='lost').length,p=s.filter(b=>b.result==='push').length;
+ return{n:s.length,w,l,p,net:s.reduce((a,b)=>a+profit(b),0),wag:s.reduce((a,b)=>a+ +b.stake,0),wr:w+l?w/(w+l):null}}
+const pct=x=>x==null?'—':(x*100).toFixed(1)+'%';
+function table(el,key,all){const g={};all.forEach(b=>{(g[b[key]||'—']??=[]).push(b)});
+ let h='<tr><th></th><th>W-L-P</th><th>Win %</th><th>Net</th></tr>';
+ Object.keys(g).sort().forEach(k=>{const a=agg(g[k]);if(!a.n)return;h+=`<tr><td>${esc(k)}</td><td>${a.w}-${a.l}-${a.p}</td><td>${pct(a.wr)}</td><td class="${cls(a.net)}">${money(a.net)}</td></tr>`});
+ document.getElementById(el).innerHTML=h}
+function seg(el,opts,k){document.getElementById(el).innerHTML=opts.map(o=>`<button class="${F[k]===o?'on':''}" data-k="${k}" data-v="${esc(o)}">${esc(o)}</button>`).join('')}
+function render(){const all=bets(),a=agg(all);
+ const $=id=>document.getElementById(id);$('net').textContent=money(a.net);$('net').className='big '+cls(a.net);
+ const u=r2(a.net/UNIT_SIZE);$('sub').textContent=`${a.n} settled bets, $${a.wag.toLocaleString('en-US')} wagered, ${u>0?'+':u<0?'−':''}${Math.abs(u).toFixed(2)} units`;
+ $('rec').textContent=`${a.w}-${a.l}-${a.p}`;$('wr').textContent=pct(a.wr);$('roi').textContent=a.wag?(a.net/a.wag*100>0?'+':a.net<0?'−':'')+Math.abs(a.net/a.wag*100).toFixed(1)+'%':'—';$('roi').className='v '+cls(a.net);
+ const c=all.filter(b=>settled(b)&&typeof b.clv==='boolean');$('clv').textContent=c.length?pct(c.filter(b=>b.clv).length/c.length):'—';
+ table('bySport','sport',all);table('byPicker','picker',all);table('byConf','confidence',all);
+ seg('fStatus',['All','Pending','Settled'],'status');seg('fSport',['All',...[...new Set(all.map(b=>b.sport).filter(Boolean))].sort()],'sport');
+ seg('fPicker',['Anyone',...[...new Set(['Claude','Grok',...all.map(b=>b.picker).filter(Boolean)])]],'picker');
+ const vis=all.map((b,i)=>[b,i]).filter(([b])=>(F.status==='All'||(F.status==='Pending'?b.result==='pending':b.result!=='pending'))&&(F.sport==='All'||b.sport===F.sport)&&(F.picker==='Anyone'||b.picker===F.picker));
+ vis.sort((x,y)=>y[0].date.localeCompare(x[0].date)||(x[0]._added&&y[0]._added?y[0]._added-x[0]._added:(y[0]._added||0)-(x[0]._added||0)||x[1]-y[1]));
+ const days={};vis.forEach(([b])=>(days[b.date]??=[]).push(b));let h='';
+ for(const d in days){const net=days[d].reduce((s,b)=>s+profit(b),0);const dt=new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  h+=`<div class="day"><span>${dt}</span><span class="${cls(net)}">${money(net)}</span></div>`;
+  for(const b of days[d]){const p=profit(b);h+=`<div class="card bet" data-id="${esc(b.id)}"><div class="bh"><div><div class="pk">${esc(b.pick)}${b.result==='pending'?'<span class="st">Pending</span>':''}</div><div class="mut">${esc(b.game)}</div></div>
+   <div class="rt"><div class="odds">${b.odds>0?'+':''}${b.odds}</div><div class="mut">$${r2(+b.stake)} to win $${r2(win(b))}</div><div class="res ${cls(p)}">${b.result==='pending'?'Pending':b.result==='void'?'Void':b.result==='push'?'Push $0':money(p)}</div></div></div>
+   <div class="tags"><span class="tag">Picked by ${esc(b.picker)}</span>${[b.confidence,b.sport,b.type,b.book].filter(Boolean).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+   ${b.notes?`<div class="notes">${esc(b.notes)}</div>`:''}<div class="acts"><div>${['won','lost','push','void'].map(r=>`<button data-a="res" data-r="${r}" class="${b.result===r?'sel':''}">${r[0].toUpperCase()+r.slice(1)}</button>`).join('')}</div><div><button data-a="edit">Edit</button><button data-a="del">Delete</button></div></div></div>`}}
+ $('log').innerHTML=h||'<p class="mut">No bets.</p>'}
+const find=id=>bets().find(b=>b.id===id);
+function put(b){overlay[b.id]=b;save();render()}
+document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
+ if(t.dataset.k){F[t.dataset.k]=t.dataset.v;render();return}
+ const card=t.closest('.bet');if(card){const b={...find(card.dataset.id)};
+  if(t.dataset.a==='res'){b.result=b.result===t.dataset.r?'pending':t.dataset.r;put(b)}
+  else if(t.dataset.a==='edit')openDlg(b);else if(t.dataset.a==='del'&&confirm('Delete this bet?')){overlay[b.id]=null;save();render()}}});
+const dlg=document.getElementById('dlg'),frm=document.getElementById('frm');let editing=null;
+function openDlg(b){editing=b;document.getElementById('dt').textContent=b?'Edit bet':'Add bet';frm.reset();
+ const v=b||{date:new Date().toLocaleDateString('en-CA'),picker:'Claude',confidence:'Standard',result:'pending'};
+ for(const el of frm.elements)if(el.name)el.value=el.name==='clv'?(typeof v.clv==='boolean'?String(v.clv):''):(v[el.name]??'');dlg.showModal()}
+document.getElementById('add').onclick=()=>openDlg(null);
+frm.addEventListener('submit',e=>{if(e.submitter&&e.submitter.value!=='ok')return;const d=Object.fromEntries(new FormData(frm));
+ const b={...(editing||{id:'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),_added:Date.now()}),...d,odds:+d.odds,stake:+d.stake};
+ if(d.clv==='')delete b.clv;else b.clv=d.clv==='true';put(b)});
+const COLS=['id','date','pick','game','odds','stake','picker','confidence','sport','type','book','result','profit','notes','clv'];
+document.getElementById('exp').onclick=()=>{const q=v=>{v=String(v??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+ const csv=[COLS.join(',')].concat(bets().map(b=>COLS.map(c=>q(c==='profit'?r2(profit(b)):b[c])).join(','))).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='bet-ledger.csv';a.click()};
+function parseCSV(s){const rows=[];let r=[],f='',q=false;for(let i=0;i<s.length;i++){const c=s[i];
+ if(q){if(c=='"'){if(s[i+1]=='"'){f+='"';i++}else q=false}else f+=c}else if(c=='"')q=true;else if(c==','){r.push(f);f=''}
+ else if(c=='\n'||c=='\r'){if(c=='\r'&&s[i+1]=='\n')i++;r.push(f);rows.push(r);r=[];f=''}else f+=c}if(f||r.length){r.push(f);rows.push(r)}return rows.filter(x=>x.join('').trim())}
+document.getElementById('imp').onclick=()=>document.getElementById('file').click();
+document.getElementById('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;const rows=parseCSV(await f.text());const hd=rows.shift().map(h=>h.trim().toLowerCase());let n=0;
+ for(const r of rows){const b={};hd.forEach((h,i)=>{if(COLS.includes(h)&&h!=='profit')b[h]=r[i]});if(!b.pick||!b.date)continue;
+  b.odds=+b.odds;b.stake=+b.stake;b.result=(b.result||'pending').toLowerCase();if(b.clv==='true'||b.clv==='false')b.clv=b.clv==='true';else delete b.clv;
+  if(!b.id){b.id='u'+Date.now().toString(36)+n;b._added=Date.now()+n}overlay[b.id]=b;n++}save();render();alert(`Imported ${n} bets (matching ids updated).`);e.target.value=''};
+document.getElementById('reset').onclick=()=>{if(confirm('Discard all browser changes and revert to the seed?')){overlay={};save();render()}};
+render();
+</script></body></html>
