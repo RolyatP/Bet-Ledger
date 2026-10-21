@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paul's To-Do List</title>
+<!--
+  Edit the lists below. Delete one quoted line when an item is done.
+  Keep this file free of dollar amounts, balances, and account numbers.
+-->
+<script>
+const LAST_UPDATED = "Oct 21, 2026";
+
+const BILLS = [
+  "AA Platinum supplies charge (dated 10/11)",
+  "AA Executive (9/22)",
+  "Rent",
+  "AA Platinum payment due 11/8",
+  "AA Executive payment due 10/20",
+];
+
+const TASKS = [
+  "Clay bar lite",
+  "Move tell off of ledger",
+  "Driver's license",
+  "Sleep Number",
+  "Sell cleaning",
+  "41 1/4 and 39 1/4",
+  "PokerCoaching subscription, due November 12",
+  "Wipe down guns",
+  "Contact tint guy",
+  "Newman coffee for Keurig",
+  "Call Venetian host about possible ban or lockout",
+  "Mow, blow, fertilize, reseed and topsoil the yard",
+];
+</script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f3efe6;
+    --paper: #fffdf8;
+    --ink: #1c1917;
+    --muted: #57534e;
+    --line: #e6dfd2;
+    --mark: #9a3412;
+  }
+  * { box-sizing: border-box; }
+  html { font-size: 112.5%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 1.15rem/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  main {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: max(1.25rem, env(safe-area-inset-top)) max(1.1rem, env(safe-area-inset-right)) max(2.5rem, env(safe-area-inset-bottom)) max(1.1rem, env(safe-area-inset-left));
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(2rem, 7vw, 2.7rem);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    font-weight: 750;
+  }
+  .updated {
+    margin: 0.55rem 0 0;
+    color: var(--muted);
+    font-size: 1.05rem;
+  }
+  section { margin-top: 1.75rem; }
+  h2 {
+    margin: 0 0 0.35rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--mark);
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  li {
+    margin: 0;
+    padding: 0.95rem 1.05rem 0.95rem 1.15rem;
+    font-size: clamp(1.28rem, 4.6vw, 1.55rem);
+    line-height: 1.35;
+    border-top: 1px solid var(--line);
+  }
+  li:first-child { border-top: 0; }
+  @media (min-width: 720px) {
+    main { padding-top: 2.5rem; }
+    li { padding: 1.05rem 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Paul's To-Do List</h1>
+  <p class="updated" id="updated"></p>
+  <div id="list"></div>
+</main>
+<script>
+  document.getElementById("updated").textContent = "Last updated " + LAST_UPDATED;
+
+  const sections = [
+    ["Bills", BILLS],
+    ["Tasks", TASKS],
+  ];
+  const root = document.getElementById("list");
+  for (const [name, items] of sections) {
+    if (!items.length) continue;
+    const section = document.createElement("section");
+    const heading = document.createElement("h2");
+    heading.textContent = name;
+    const list = document.createElement("ul");
+    for (const text of items) {
+      const item = document.createElement("li");
+      item.textContent = text;
+      list.appendChild(item);
+    }
+    section.append(heading, list);
+    root.appendChild(section);
+  }
+</script>
+</body>
+</html>
