@@ -59,11 +59,12 @@ input,select,textarea{background:var(--bg);color:var(--tx);border:1px solid var(
 <label>Beat closing line<select name="clv"><option value="">—</option><option value="true">Yes</option><option value="false">No</option></select></label>
 <label class="f">Notes<textarea name="notes" rows="3"></textarea></label></div>
 <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button value="cancel" formnovalidate>Cancel</button><button class="pri" value="ok" id="save">Save</button></div></form></dialog>
-<datalist id="pl"><option>Claude<option>Grok</datalist><datalist id="cl"><option>Lean<option>Standard<option>Strong</datalist>
+<datalist id="pl"><option>Claude<option>Grok<option>Betting Analyst</datalist><datalist id="cl"><option>Lean<option>Standard<option>Strong</datalist>
 <datalist id="sl"><option>NFL<option>NCAAF<option>MLB<option>NBA<option>NHL<option>Soccer<option>Other</datalist>
 <datalist id="tl"><option>Spread<option>Total<option>Moneyline<option>Parlay<option>Teaser<option>Prop<option>Other</datalist>
 <script id="seed" type="application/json">
 [
+{"id":"s56","date":"2026-10-26","pick":"SGP: Brewers ML + Over 7 total runs + Freddy Peralta Under 4.5 strikeouts","game":"MLB World Series Game 3: Brewers at Rays (Mon Oct 26, 2026 8:10 PM ET)","odds":565.25,"stake":50,"picker":"Betting Analyst","confidence":"Standard","sport":"MLB","type":"Parlay","book":"Caesars","result":"pending","notes":"Caesars 3-leg same game parlay: Milwaukee Brewers moneyline, Over 7 total runs, Freddy Peralta Under 4.5 pitching strikeouts. Base +425 with 33% profit boost: cash wagered $50, boosted to win $282.63, pays $332.63 total. Odds field is the effective boosted price, +565.25. Bet ID b950eea0-d16f-11f1-8930-eff4680a6 (truncated). Pick from Paul's Betting Analyst agent. Placed by Paul Oct 26, 2026 3:02 PM ET."},
 {"id":"s55","date":"2026-10-26","pick":"Eagles ML","game":"Cowboys @ Eagles (Mon Oct 26, 2026 8:15 PM ET, ESPN)","odds":236.6,"stake":50,"picker":"Paul","confidence":"Standard","sport":"NFL","type":"Moneyline","book":"Caesars","result":"pending","notes":"Caesars straight bet with 30% profit boost: Philadelphia Eagles moneyline vs Dallas Cowboys. Base +182: cash wagered $50, boosted to win $118.30, pays $168.30 total. Odds field is the effective boosted price. Bet ID f3263050-d16e-11f1-a8e4-e9672136 (truncated). Paul's own pick. Placed by Paul Oct 26, 2026 2:56 PM ET."},
 {"id":"s53","date":"2026-10-26","pick":"Cowboys/Eagles Under 44.5","game":"Cowboys @ Eagles (Mon Oct 26, 2026 8:15 PM ET, ESPN)","odds":-110,"stake":55,"picker":"Grok","confidence":"Standard","sport":"NFL","type":"Total","book":"CrazyWager247","result":"pending","notes":"Ticket 1564443069. Risking $55 to win $50 at -110. Grok pick. Placed by Paul Oct 26, 2026 2:53 PM ET."},
 {"id":"s54","date":"2026-10-26","pick":"Freddy Peralta Under 4.5 Ks","game":"MLB World Series Game 3: Brewers at Rays (Mon Oct 26, 2026 8:00 PM ET)","odds":101,"stake":50,"picker":"Grok","confidence":"Standard","sport":"MLB","type":"Prop","book":"Caesars","result":"pending","notes":"Caesars bet ID 4b18a4b0-d16e-11f1-bf9c-999b3d05da9e. Freddy Peralta Under 4.5 total pitching strikeouts. Odds +101. Cash wagered $50 to win $50.50, pays $100.50. Grok pick. Placed by Paul Oct 26, 2026 2:51 PM ET."},
@@ -151,7 +152,7 @@ function render(){const all=bets(),a=agg(all);
  const c=all.filter(b=>settled(b)&&typeof b.clv==='boolean');$('clv').textContent=c.length?pct(c.filter(b=>b.clv).length/c.length):'—';
  table('bySport','sport',all);table('byPicker','picker',all);table('byConf','confidence',all);
  seg('fStatus',['All','Pending','Settled'],'status');seg('fSport',['All',...[...new Set(all.map(b=>b.sport).filter(Boolean))].sort()],'sport');
- seg('fPicker',['Anyone',...[...new Set(['Claude','Grok',...all.map(b=>b.picker).filter(Boolean)])]],'picker');
+ seg('fPicker',['Anyone',...[...new Set(['Claude','Grok','Betting Analyst',...all.map(b=>b.picker).filter(Boolean)])]],'picker');
  const vis=all.map((b,i)=>[b,i]).filter(([b])=>(F.status==='All'||(F.status==='Pending'?b.result==='pending':b.result!=='pending'))&&(F.sport==='All'||b.sport===F.sport)&&(F.picker==='Anyone'||b.picker===F.picker));
  vis.sort((x,y)=>y[0].date.localeCompare(x[0].date)||(x[0]._added&&y[0]._added?y[0]._added-x[0]._added:(y[0]._added||0)-(x[0]._added||0)||x[1]-y[1]));
  const days={};vis.forEach(([b])=>(days[b.date]??=[]).push(b));let h='';
