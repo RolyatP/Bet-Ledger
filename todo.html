@@ -6,17 +6,17 @@
 <title>Paul's To-Do List</title>
 <!--
   Edit the lists below. Delete one quoted line when an item is done.
-  Do not add account numbers. Keep only dollar amounts Paul explicitly listed.
+  Dollar amounts and reference details stay only as Paul listed them.
 -->
 <script>
-const LAST_UPDATED = "Oct 21, 2026";
+const LAST_UPDATED = "Oct 26, 2026";
 
 const BILLS = [
-  "AA Platinum / 10/11",
+  "AA Platinum / 10/11 - owed 2760 for supplies",
   "AA Executive / 9/22",
-  "Rent",
+  "Rent 500",
   "AA Platinum due 11/8 - $10,800",
-  "AA Executive payment due 10/20",
+  "AA Executive due 10/20 - 4700",
 ];
 
 const TASKS = [
@@ -27,9 +27,20 @@ const TASKS = [
   "41 1/4 and 39 1/4",
   "PokerCoaching subscription, due November 12",
   "Wipe down guns",
-  "Tint appointment Monday 10/26, 9:00 AM",
-  "Call Venetian host about possible ban or lockout",
+  "Call my Venetian host about the possible ban or lockout",
   "Talk to Jay about trim in the house",
+  "Call CPI Security about the alarm's weak connection: (800) 948-7133 or CPISupport@cpisecurity.com",
+];
+
+const CLAIM = [
+  "Claim: NC26-0100396",
+  "Policy: 420117000176",
+];
+
+const REFERENCES = [
+  "Paul's American Airlines number: 3P7MW46",
+  "Kristy's American Airlines number: 70RX5P4",
+  "Kristy's Known Traveler Number: TT131VHRY",
 ];
 </script>
 <style>
@@ -111,6 +122,8 @@ const TASKS = [
   const sections = [
     ["Bills", BILLS],
     ["Tasks", TASKS],
+    ["Universal P&C insurance claim", CLAIM],
+    ["Reference numbers", REFERENCES],
   ];
   const root = document.getElementById("list");
   for (const [name, items] of sections) {
