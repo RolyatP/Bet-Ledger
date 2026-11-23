@@ -10,6 +10,8 @@
   result ("pending"|"won"|"lost"|"push"|"void"), notes, clv (optional: true/false = beat closing line),
   bonus (optional: true = bonus bet, $0 cash risk). A bonus loss is $0 and a bonus win is the
   to-win amount; the stake is not returned and is excluded from amount wagered.
+  hedge (optional: true) and hedgeGroup (shared id, e.g. "s132-s133") mark one hedged pair.
+  Put the same hedgeGroup on every bet in the pair. Hedges stay in picker records.
   Bets appear in the log in seed-array order within a day (put newer bets first).
   UNIT_SIZE below = $ per unit. Browser edits are stored in localStorage key "betLedger.overlay.v1"
   as {id: bet|null}, layered over the seed; seed bets without an override always show the seed version.
@@ -34,6 +36,7 @@ button:hover{border-color:var(--acc)}button.pri{background:var(--acc);color:#0f1
 .bet{margin-bottom:10px}.bh{display:flex;justify-content:space-between;gap:10px}.pk{font-weight:650;font-size:16px}
 .rt{text-align:right;white-space:nowrap}.odds{font-weight:650}.res{font-weight:700;margin-top:2px}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.tag{background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:2px 9px;font-size:12px;color:var(--mut)}
+.tag.hedge{color:var(--yel);border-color:#8a7040;background:#2c2616;font-weight:650}
 .notes{color:#c3c8d2;font-size:13.5px;margin:6px 0 10px}
 .acts{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}.acts div{display:flex;gap:6px;flex-wrap:wrap}.acts button{padding:5px 10px;font-size:13px}
 .acts button.sel{background:var(--acc);color:#0f1115}
@@ -58,6 +61,8 @@ input,select,textarea{background:var(--bg);color:var(--tx);border:1px solid var(
 <label>Confidence<input name="confidence" list="cl" value="Standard"></label><label>Sport<input name="sport" list="sl"></label>
 <label>Bet type<input name="type" list="tl"></label><label>Sportsbook<input name="book"></label>
 <label>Result<select name="result"><option value="pending">Pending</option><option value="won">Won</option><option value="lost">Lost</option><option value="push">Push</option><option value="void">Void</option></select></label>
+<label>Hedge<select name="hedge"><option value="">No</option><option value="true">Yes</option></select></label>
+<label>Hedge group<input name="hedgeGroup" placeholder="s132-s133"></label>
 <label>Beat closing line<select name="clv"><option value="">—</option><option value="true">Yes</option><option value="false">No</option></select></label>
 <label class="f">Notes<textarea name="notes" rows="3"></textarea></label></div>
 <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button value="cancel" formnovalidate>Cancel</button><button class="pri" value="ok" id="save">Save</button></div></form></dialog>
@@ -66,8 +71,8 @@ input,select,textarea{background:var(--bg);color:var(--tx);border:1px solid var(
 <datalist id="tl"><option>Spread<option>Total<option>Moneyline<option>Parlay<option>Teaser<option>Prop<option>Other</datalist>
 <script id="seed" type="application/json">
 [
-{"id":"s133","date":"2026-11-23","pick":"FIU ML","game":"Long Beach State @ FIU (Mon Nov 23, 2026 1:00 PM ET, ESPN+)","odds":-344.44444444444446,"stake":248,"picker":"Ace","confidence":"Standard","sport":"NCAAB","type":"Moneyline","book":"Wagner","result":"pending","notes":"Ace pick. Wagner straight bet on awsome.77711.eu, account Bookhouse300, the cash hedge of bonus bet s132. Florida International moneyline vs Long Beach State. Ticket price -345. Cash wagered $248 to win $72, pays $320. -345 on $248 computes to $71.88, so the odds field is the price that pays the slip's $72. With s132, the pair locks +$72 either way. Confirmation 178792351. Placed by Paul Nov 23, 2026 about 11:16 AM ET."},
-{"id":"s132","date":"2026-11-23","pick":"Long Beach State ML","game":"Long Beach State @ FIU (Mon Nov 23, 2026 1:00 PM ET, ESPN+)","odds":320,"stake":100,"bonus":true,"picker":"Ace","confidence":"Standard","sport":"NCAAB","type":"Moneyline","book":"DraftKings","result":"pending","notes":"Ace pick. DraftKings bonus bet, hedged with s133. Long Beach State moneyline (+320) at Florida International. $100 bonus stake, $0 cash risk, stake not returned. To win $320, payout $320. A loss is $0 cash P/L and a win is +$320. Ticket DK639310473095751783. Placed by Paul Nov 23, 2026 11:15:09 AM ET."},
+{"id":"s133","date":"2026-11-23","pick":"FIU ML","game":"Long Beach State @ FIU (Mon Nov 23, 2026 1:00 PM ET, ESPN+)","odds":-344.44444444444446,"stake":248,"picker":"Ace","confidence":"Standard","sport":"NCAAB","type":"Moneyline","book":"Wagner","result":"pending","hedge":true,"hedgeGroup":"s132-s133","notes":"Ace pick. Wagner straight bet on awsome.77711.eu, account Bookhouse300, the cash hedge of bonus bet s132. Florida International moneyline vs Long Beach State. Ticket price -345. Cash wagered $248 to win $72, pays $320. -345 on $248 computes to $71.88, so the odds field is the price that pays the slip's $72. With s132, the pair locks +$72 either way. Confirmation 178792351. Placed by Paul Nov 23, 2026 about 11:16 AM ET."},
+{"id":"s132","date":"2026-11-23","pick":"Long Beach State ML","game":"Long Beach State @ FIU (Mon Nov 23, 2026 1:00 PM ET, ESPN+)","odds":320,"stake":100,"bonus":true,"picker":"Ace","confidence":"Standard","sport":"NCAAB","type":"Moneyline","book":"DraftKings","result":"pending","hedge":true,"hedgeGroup":"s132-s133","notes":"Ace pick. DraftKings bonus bet, hedged with s133. Long Beach State moneyline (+320) at Florida International. $100 bonus stake, $0 cash risk, stake not returned. To win $320, payout $320. A loss is $0 cash P/L and a win is +$320. Ticket DK639310473095751783. Placed by Paul Nov 23, 2026 11:15:09 AM ET."},
 {"id":"s131","date":"2026-11-23","pick":"2-leg parlay: Brentford ML (+121) / Levante ML (+112)","game":"EPL/La Liga: Everton at Brentford (Mon Nov 23, 2026 3:00 PM ET), Elche at Levante (3:00 PM ET)","odds":479.08,"stake":25,"picker":"Ace","confidence":"Standard","sport":"Soccer","type":"Parlay","book":"Caesars","result":"pending","notes":"Ace pick. Caesars Sportsbook (NC) 2-leg soccer parlay with a 30% profit boost: Brentford moneyline (+121) vs Everton, Levante moneyline (+112) vs Elche. Base +369: cash wagered $25.00, unboosted payout $117.13 (to win $92.13), boosted to win $119.77, pays $144.77 total. Odds field is the effective boosted price, +479.08. Bet ID 5dbd0b30-e756-11f1-bf4a-63957b12 (truncated). Placed by Paul Nov 23, 2026 10:55 AM ET."},
 {"id":"s130","date":"2026-11-23","pick":"SGP: Under 54.5 / Commanders ML","game":"Bengals @ Commanders (Mon Nov 23, 2026 8:15 PM ET, ESPN)","odds":665,"stake":50,"picker":"Ace","confidence":"Standard","sport":"NFL","type":"Parlay","book":"Caesars","result":"pending","notes":"Ace pick. Caesars Sportsbook (NC) 2-leg same game parlay with a 33% profit boost: Under 54.5 total points and Washington Commanders moneyline. Cincinnati Bengals at Washington Commanders, Monday Night Football, 8:15 PM ET on ESPN. Base +500: cash wagered $50.00, unboosted payout $300.00 (to win $250.00), boosted to win $332.50, pays $382.50 total. Odds field is the effective boosted price, +665. Bet ID f6f67760-e755-11f1-b1e6-1176ff752 (truncated). Placed by Paul Nov 23, 2026 10:53 AM ET."},
 {"id":"s129","date":"2026-11-23","pick":"Cavaliers/Bulls Under 241.5","game":"Cavaliers @ Bulls (Mon Nov 23, 2026 8:10 PM ET)","odds":-108.012568735271,"stake":55,"picker":"Ace","confidence":"Standard","sport":"NBA","type":"Total","book":"DraftKings","result":"pending","notes":"Ace pick. DraftKings straight bet: Cleveland Cavaliers at Chicago Bulls Under 241.5. Ticket price -108. Cash wagered $55.00 to win $50.92, pays $105.92. -108 on $55 computes to $50.93, so the odds field is the price that pays the slip's $50.92. Ticket DK639310448232651542. Placed by Paul Nov 23, 2026 10:33:44 AM ET. Slip lists 8:10 PM ET; the NBA lists 8:00 PM ET."},
@@ -219,6 +224,10 @@ const settled=b=>['won','lost','push'].includes(b.result);
 function agg(list){const s=list.filter(settled);const w=s.filter(b=>b.result==='won').length,l=s.filter(b=>b.result==='lost').length,p=s.filter(b=>b.result==='push').length;
  return{n:s.length,w,l,p,net:s.reduce((a,b)=>a+profit(b),0),wag:s.reduce((a,b)=>a+(b.bonus?0:+b.stake),0),wr:w+l?w/(w+l):null}}
 const pct=x=>x==null?'—':(x*100).toFixed(1)+'%';
+function hedgeTag(b,all){if(!b.hedge&&!b.hedgeGroup)return'';
+ const ids=all.filter(x=>b.hedgeGroup&&x.hedgeGroup===b.hedgeGroup).map(x=>x.id).sort();
+ const label=ids.length?ids.join(' · '):(b.hedgeGroup||'');
+ return`<span class="tag hedge">Hedge${label?` · ${esc(label)}`:''}</span>`}
 function table(el,key,all){const g={};all.forEach(b=>{(g[b[key]||'—']??=[]).push(b)});
  let h='<tr><th></th><th>W-L-P</th><th>Win %</th><th>Net</th></tr>';
  Object.keys(g).sort().forEach(k=>{const a=agg(g[k]);if(!a.n)return;h+=`<tr><td>${esc(k)}</td><td>${a.w}-${a.l}-${a.p}</td><td>${pct(a.wr)}</td><td class="${cls(a.net)}">${money(a.net)}</td></tr>`});
@@ -239,7 +248,7 @@ function render(){const all=bets(),a=agg(all);
   h+=`<div class="day"><span>${dt}</span><span class="${cls(net)}">${money(net)}</span></div>`;
   for(const b of days[d]){const p=profit(b);h+=`<div class="card bet" data-id="${esc(b.id)}"><div class="bh"><div><div class="pk">${esc(b.pick)}${b.result==='pending'?'<span class="st">Pending</span>':''}</div><div class="mut">${esc(b.game)}</div></div>
    <div class="rt"><div class="odds">${b.odds>0?'+':''}${b.odds}</div><div class="mut">${b.bonus?`$${r2(+b.stake)} bonus`:`$${r2(+b.stake)}`} to win $${r2(win(b))}</div><div class="res ${cls(p)}">${b.result==='pending'?'Pending':b.result==='void'?'Void':b.result==='push'?'Push $0':money(p)}</div></div></div>
-   <div class="tags"><span class="tag">Picked by ${esc(b.picker)}</span>${b.bonus?'<span class="tag">Bonus bet</span>':''}${[b.confidence,b.sport,b.type,b.book].filter(Boolean).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+   <div class="tags"><span class="tag">Picked by ${esc(b.picker)}</span>${b.bonus?'<span class="tag">Bonus bet</span>':''}${hedgeTag(b,all)}${[b.confidence,b.sport,b.type,b.book].filter(Boolean).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
    ${b.notes?`<div class="notes">${esc(b.notes)}</div>`:''}<div class="acts"><div>${['won','lost','push','void'].map(r=>`<button data-a="res" data-r="${r}" class="${b.result===r?'sel':''}">${r[0].toUpperCase()+r.slice(1)}</button>`).join('')}</div><div><button data-a="edit">Edit</button><button data-a="del">Delete</button></div></div></div>`}}
  $('log').innerHTML=h||'<p class="mut">No bets.</p>'}
 const find=id=>bets().find(b=>b.id===id);
@@ -252,12 +261,14 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
 const dlg=document.getElementById('dlg'),frm=document.getElementById('frm');let editing=null;
 function openDlg(b){editing=b;document.getElementById('dt').textContent=b?'Edit bet':'Add bet';frm.reset();
  const v=b||{date:new Date().toLocaleDateString('en-CA'),picker:'Claude',confidence:'Standard',result:'pending'};
- for(const el of frm.elements)if(el.name)el.value=el.name==='clv'?(typeof v.clv==='boolean'?String(v.clv):''):(v[el.name]??'');dlg.showModal()}
+ for(const el of frm.elements)if(el.name)el.value=el.name==='clv'?(typeof v.clv==='boolean'?String(v.clv):''):el.name==='hedge'?(v.hedge?'true':''):(v[el.name]??'');dlg.showModal()}
 document.getElementById('add').onclick=()=>openDlg(null);
 frm.addEventListener('submit',e=>{if(e.submitter&&e.submitter.value!=='ok')return;const d=Object.fromEntries(new FormData(frm));
  const b={...(editing||{id:'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),_added:Date.now()}),...d,odds:+d.odds,stake:+d.stake};
- if(d.clv==='')delete b.clv;else b.clv=d.clv==='true';put(b)});
-const COLS=['id','date','pick','game','odds','stake','bonus','picker','confidence','sport','type','book','result','profit','notes','clv'];
+ if(d.clv==='')delete b.clv;else b.clv=d.clv==='true';
+ if(d.hedge==='true')b.hedge=true;else delete b.hedge;
+ b.hedgeGroup=String(d.hedgeGroup||'').trim();if(!b.hedgeGroup)delete b.hedgeGroup;put(b)});
+const COLS=['id','date','pick','game','odds','stake','bonus','hedge','hedgeGroup','picker','confidence','sport','type','book','result','profit','notes','clv'];
 document.getElementById('exp').onclick=()=>{const q=v=>{v=String(v??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
  const csv=[COLS.join(',')].concat(bets().map(b=>COLS.map(c=>q(c==='profit'?r2(profit(b)):b[c])).join(','))).join('\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='bet-ledger.csv';a.click()};
@@ -267,7 +278,7 @@ function parseCSV(s){const rows=[];let r=[],f='',q=false;for(let i=0;i<s.length;
 document.getElementById('imp').onclick=()=>document.getElementById('file').click();
 document.getElementById('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;const rows=parseCSV(await f.text());const hd=rows.shift().map(h=>h.trim().toLowerCase());let n=0;
  for(const r of rows){const b={};hd.forEach((h,i)=>{if(COLS.includes(h)&&h!=='profit')b[h]=r[i]});if(!b.pick||!b.date)continue;
-  b.odds=+b.odds;b.stake=+b.stake;b.result=(b.result||'pending').toLowerCase();if(b.bonus==='true'||b.bonus===true)b.bonus=true;else delete b.bonus;if(b.clv==='true'||b.clv==='false')b.clv=b.clv==='true';else delete b.clv;
+  b.odds=+b.odds;b.stake=+b.stake;b.result=(b.result||'pending').toLowerCase();if(b.bonus==='true'||b.bonus===true)b.bonus=true;else delete b.bonus;if(b.hedge==='true'||b.hedge===true)b.hedge=true;else delete b.hedge;b.hedgeGroup=String(b.hedgeGroup||'').trim();if(!b.hedgeGroup)delete b.hedgeGroup;if(b.clv==='true'||b.clv==='false')b.clv=b.clv==='true';else delete b.clv;
   if(!b.id){b.id='u'+Date.now().toString(36)+n;b._added=Date.now()+n}overlay[b.id]=b;n++}save();render();alert(`Imported ${n} bets (matching ids updated).`);e.target.value=''};
 document.getElementById('reset').onclick=()=>{if(confirm('Discard all browser changes and revert to the seed?')){overlay={};save();render()}};
 render();
